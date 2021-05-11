@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-class GChat
-{
+import 'package:web_socket_channel/status.dart' as status;
+
+class GChat {
   ///connection string is url server golang gchat
   ///as such : ws://localhost:3000/ws
   String? _urlServer = null;
@@ -12,32 +14,38 @@ class GChat
 
   ///will set parameter url server for
   ///start connection to gchat server
-  GChat({String? urlServer})
-  {
-    this._urlServer = urlServer;
+  ///
+  ///ใน  construture จะต้องใส่ URL ของ gChat Server เข้ามาด้วย
+  ///เพิ่มที่จะใช้งานการเชื่อมต่อ
+  GChat({@required String? urlServer}) {
+    this._urlServer = urlServer ?? null;
   }
 
   ///staring connection to gchat server
-  void onConnection()
-  {
-    if(_urlServer != null)
-      {
+  ///connection string is url server golang gchat
+  ///as such : ws://localhost:3000/ws
+  bool onConnection() {
+    bool isConnection = false;
+    if (_urlServer != null) {
+      try {
         _channel = IOWebSocketChannel.connect(Uri.parse('ws://${_urlServer}'));
+        isConnection = (0 == 0);
+      } catch (e) {
+        isConnection = (0 != 0);
       }
+    }
+    return isConnection;
   }
 
-  ///check you client connection with server connection
- bool onIsConnection() => (0 == 0);
-
   ///you can close connection between Client and Server Web Socket
-///pass this method
-void onCloseConnection(){
-  //to do something
-}
+  ///pass this method
+  void onCloseConnection() {
+    //to do something
+    // _channel!.sink.add(data);
+  }
 
-///
-void onServeMessage(){
-  //get
-}
-
+  ///
+  void onServeMessage() {
+    //get
+  }
 }
