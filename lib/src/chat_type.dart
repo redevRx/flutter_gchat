@@ -1,0 +1,5 @@
+enum ChatType
+{
+  Message,
+  Join
+}
