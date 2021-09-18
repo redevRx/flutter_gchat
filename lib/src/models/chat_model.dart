@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-class GChatModel {
-  //defind model
+class ChatModel {
+  //defined model
   final String? roomName;
   final String? userId;
   final String? userName;
@@ -14,7 +14,7 @@ class GChatModel {
   final Uint8List? video;
   final String? timestamp;
 
-  GChatModel(
+  ChatModel(
       {this.roomName,
       this.userId,
       this.userName,
@@ -48,8 +48,8 @@ class GChatModel {
 
   ///### Comvert Map to this Class
   ///get Data from Map
-  factory GChatModel.fromJson(Map json) {
-    return GChatModel(
+  factory ChatModel.fromJson(Map json) {
+    return ChatModel(
         roomName: json["room"] ?? "",
         userId: json["userId"] ?? "",
         userName: json["userName"] ?? "",

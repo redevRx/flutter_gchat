@@ -27,15 +27,9 @@ class GChat {
   ///
   ///ใน  construture จะต้องใส่ URL ของ gChat Server เข้ามาด้วย
   ///เพิ่มที่จะใช้งานการเชื่อมต่อ
-  GChat(
-      {
-
-      ///connection string is url server golang gchat
-      ///as such : ws://localhost:3000/ws
-      String? urlServer
-
-      ///
-      }) {
+  ///connection string is url server golang gchat
+  ///as such : ws://localhost:3000/ws
+  GChat({required String? urlServer}) {
     this._urlServer = urlServer ?? null;
   }
 
@@ -98,23 +92,24 @@ class GChat {
     try {
       //for web
       if (kIsWeb) {
-        _channelWeb!.sink.add(new GChatModel(
+        _channelWeb!.sink.add(new ChatModel(
             roomName: "",
             userName: userName,
             userId: userId,
             messageType: ChatType.TypeCloseConnection.getType));
         _channelWeb!.sink.close();
         isClose = (0 == 0);
-      }
-      //for mobile
-      _channel!.sink.add(new GChatModel(
-          roomName: "",
-          userName: userName,
-          userId: userId,
-          messageType: ChatType.TypeCloseConnection.getType));
+      } else {
+        //for mobile
+        _channel!.sink.add(new ChatModel(
+            roomName: "",
+            userName: userName,
+            userId: userId,
+            messageType: ChatType.TypeCloseConnection.getType));
 //
-      _channel!.sink.close();
-      isClose = (0 == 0);
+        _channel!.sink.close();
+        isClose = (0 == 0);
+      }
     } catch (e) {
       print("$e");
       isClose = (0 != 0);
@@ -123,8 +118,8 @@ class GChat {
     return isClose;
   }
 
-  List<List<GChatModel>> _modelChat = [[]];
-  List<GChatModel> _itemsChat = [];
+  List<List<ChatModel>> _modelChat = [[]];
+  List<ChatModel> _itemsChat = [];
 
   ///### Get Message that Send Between user
   ///will return all message
@@ -139,17 +134,32 @@ class GChat {
   ///   return Text("${snapshot.data.message}");
   /// },)
   ///```
-  Stream<List<GChatModel>> onSoundChat() {
-    final controllerChat = BehaviorSubject<List<GChatModel>>();
+  Stream<List<ChatModel>> onSoundChat() {
+    final controllerChat = BehaviorSubject<List<ChatModel>>();
     if (kIsWeb) {
       _channelWeb!.stream.listen((it) {
         // loop get data
         it.values.foreach((va) {
-          _itemsChat.add(GChatModel.fromJson(it));
+          _itemsChat.add(ChatModel.fromJson(it));
         });
 
         ///
-        controllerChat..sink.add(_itemsChat);
+        controllerChat
+          ..sink
+          ..add(_itemsChat);
+      });
+    }
+    else {
+      _channel!.stream.listen((it) {
+        // loop get data
+        it.values.foreach((va) {
+          _itemsChat.add(ChatModel.fromJson(it));
+        });
+
+        ///
+        controllerChat
+          ..sink
+          ..add(_itemsChat);
       });
     }
 
@@ -174,17 +184,19 @@ class GChat {
   ///```
   void onSoundAllMessage({String? room, String? name}) {
     if (kIsWeb) {
-      _channelWeb!.sink.add(new GChatModel(
+      _channelWeb!.sink.add(new ChatModel(
+              roomName: room,
+              userName: name,
+              messageType: ChatType.TypeGetMessage.getType)
+          .toMap());
+    } else {
+      //for mobile
+      _channel!.sink.add(new ChatModel(
               roomName: room,
               userName: name,
               messageType: ChatType.TypeGetMessage.getType)
           .toMap());
     }
-    _channel!.sink.add(new GChatModel(
-            roomName: room,
-            userName: name,
-            messageType: ChatType.TypeGetMessage.getType)
-        .toMap());
   }
 
   ///### Send Item Type Text
@@ -203,26 +215,26 @@ class GChat {
       {String? message, String? room, String? userName, String? userId}) {
     try {
       if (kIsWeb) {
-        _channelWeb!.sink.add(new GChatModel(
+        _channelWeb!.sink.add(new ChatModel(
                 roomName: room,
                 message: message,
                 itemType: ChatType.ItemTypeMessage.getType,
                 userName: userName,
                 messageType: ChatType.TypeMessage.getType,
                 userId: userId,
-                messageId: "")
+                messageId: "${onSoundUID()}-message-id")
             .toMap());
 
         return (0 == 0);
       } else {
-        _channel!.sink.add(new GChatModel(
+        _channel!.sink.add(new ChatModel(
                 roomName: room,
                 message: message,
                 itemType: ChatType.ItemTypeMessage.getType,
                 userName: userName,
                 messageType: ChatType.TypeMessage.getType,
                 userId: userId,
-                messageId: "")
+                messageId: "${onSoundUID()}-message-id")
             .toMap());
         return (0 == 0);
       }
@@ -247,7 +259,7 @@ class GChat {
   ///final uuid = await gchat.onCraeteUID();
   ///print(uuid);
   /// ```
-  Future<String> onCraeteUID() async {
+  Future<String> onCreateUID() async {
     final Random _random = Random();
     final shared = await SharedPreferences.getInstance();
 
@@ -269,9 +281,7 @@ class GChat {
           '${_bitsDigits(16, 4)}-'
           '${_printDigits(special, 1)}${_bitsDigits(12, 3)}-'
           '${_bitsDigits(16, 4)}${_bitsDigits(16, 4)}${_bitsDigits(16, 4)}';
-      if (uid != null) {
-        await shared.setString(UID, uid);
-      }
+      await shared.setString(UID, uid);
     }
     return uid ?? shared.getString(UID)!;
   }
@@ -289,7 +299,7 @@ class GChat {
   /// ```
   Future<String?> onSoundUID() async {
     final shared = await SharedPreferences.getInstance();
-    return shared.getString(UID) ?? await this.onCraeteUID();
+    return shared.getString(UID) ?? await this.onCreateUID();
   }
 
   ///### Create new Room
@@ -308,14 +318,14 @@ class GChat {
   ///```
   void onSoundRoom({String? room, String? userName, String? userId}) {
     if (kIsWeb) {
-      _channelWeb!.sink.add(new GChatModel(
+      _channelWeb!.sink.add(new ChatModel(
               roomName: room,
               userName: userName,
               userId: userId,
               messageType: ChatType.TypeRoom.getType)
           .toMap());
     } else {
-      _channel!.sink.add(new GChatModel(
+      _channel!.sink.add(new ChatModel(
               roomName: room,
               userName: userName,
               userId: userId,
@@ -332,21 +342,23 @@ class GChat {
   ///
   ///### Example
   ///``` dart
-  ///final gchat = new GChat();
-  ///gchat.unSoundRoom();
+  ///final gChat = new GChat();
+  ///gChat.unSoundRoom();
   ///```
   void unSoundRoom({String? userName, String? room}) {
     if (kIsWeb) {
-      _channelWeb!.sink.add(new GChatModel(
+      _channelWeb!.sink.add(new ChatModel(
               messageType: ChatType.TypeLeaveRoom.getType,
               roomName: room,
               userName: userName)
           .toMap());
     }
-    _channel!.sink.add(new GChatModel(
-            messageType: ChatType.TypeLeaveRoom.getType,
-            roomName: room,
-            userName: userName)
-        .toMap());
+    else {
+      _channel!.sink.add(new ChatModel(
+              messageType: ChatType.TypeLeaveRoom.getType,
+              roomName: room,
+              userName: userName)
+          .toMap());
+    }
   }
 }
